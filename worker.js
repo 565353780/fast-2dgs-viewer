@@ -1,4 +1,4 @@
-import {parsePLY,prepare} from './core.js';
+import {parsePLY,prepare} from './core.js?v=2';
 let scene,generation;
 self.onmessage=({data:m})=>{
   try {

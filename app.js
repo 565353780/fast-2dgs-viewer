@@ -1,6 +1,6 @@
-import {Renderer} from './renderer.js';
-import {orbitCamera} from './core.js';
-const $=id=>document.getElementById(id),canvas=$('canvas'),worker=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
+import {Renderer} from './renderer.js?v=2';
+import {orbitCamera} from './core.js?v=2';
+const $=id=>document.getElementById(id),canvas=$('canvas'),worker=new Worker(new URL('./worker.js?v=2',import.meta.url),{type:'module'});
 let renderer,ready=false,busy=false,dirty=false,bounds,target,distance,yaw=0,pitch=0.12,auto=false,last=performance.now(),frameID=0,activeCamera,filename='',loadID=0,dragDepth=0,lastCompleted=0;
 const message=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error);};
 const request=()=>{dirty=true;};

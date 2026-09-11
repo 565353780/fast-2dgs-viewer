@@ -48,6 +48,8 @@ Node 测试覆盖三种 PLY 编码、激活、SH 通道布局、裁剪、投影�
 
 ## 发布
 
+发布更新时同步递增 `index.html`、`app.js`、`worker.js` 中的资源版本参数，避免浏览器缓存混用不同版本。
+
 `gh-pages` 分支只包含运行所需的静态文件和授权声明，可直接作为 GitHub Pages 的发布源（根目录）。仓库保留测试与本说明，发布版本不带测试数据、PLY、服务地址、访问凭据或训练代码。
 
 源版本与授权见 [NOTICE.md](NOTICE.md) 和 [LICENSE.md](LICENSE.md)。

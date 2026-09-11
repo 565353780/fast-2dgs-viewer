@@ -16,6 +16,13 @@ fn main(@builtin(global_invocation_id) gid:vec3u) {
   var transmittance=1.0; var color=vec3f(0.0);
   for(var j=offsets[tile];j<offsets[tile+1u];j++) {
     let s=splats[indices[j]];
+    if(params.size.w==1u) {
+      let delta=vec2f(s.u.w,s.v.w)-pixel;
+      if(dot(delta,delta)<=params.bg.w*params.bg.w) {
+        color=s.color.xyz;transmittance=0.0;break;
+      }
+      continue;
+    }
     let p=cross(pixel.x*s.w.xyz-s.u.xyz,pixel.y*s.w.xyz-s.v.xyz);
     if(p.z==0.0) {continue;}
     let uv=p.xy/p.z;
@@ -65,7 +72,7 @@ export class Renderer {
     if(!this.buffers[name] || this.buffers[name].size<size) {this.buffers[name]?.destroy();this.buffers[name]=d.createBuffer({size:Math.ceil(size/256)*256,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});}
     d.queue.writeBuffer(this.buffers[name],0,array);return this.buffers[name];
   }
-  async render(frame,width,height,bg=[1,1,1]) {
+  async render(frame,width,height,bg=[1,1,1],options={}) {
     const d=this.device;
     if(width>d.limits.maxTextureDimension2D || height>d.limits.maxTextureDimension2D) throw Error('图像尺寸超出 GPU 限制。');
     if(!this.texture || this.canvas.width!==width || this.canvas.height!==height) {
@@ -73,7 +80,7 @@ export class Renderer {
       this.texture=d.createTexture({size:[width,height],format:'rgba8unorm',usage:GPUTextureUsage.STORAGE_BINDING|GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_SRC});
       this.textureView=this.texture.createView();this.presentGroup=d.createBindGroup({layout:this.display.getBindGroupLayout(0),entries:[{binding:0,resource:this.textureView}]});
     }
-    const uniform=new ArrayBuffer(32);new Uint32Array(uniform).set([width,height,Math.ceil(width/16),0]);new Float32Array(uniform).set([...bg,1],4);d.queue.writeBuffer(this.uniform,0,uniform);
+    const uniform=new ArrayBuffer(32);new Uint32Array(uniform).set([width,height,Math.ceil(width/16),options.mode==='points'?1:0]);new Float32Array(uniform).set([...bg,(options.pointSize??3)/2],4);d.queue.writeBuffer(this.uniform,0,uniform);
     const buffers=[this.upload('data',frame.data),this.upload('offsets',frame.offsets),this.upload('indices',frame.indices),this.uniform];
     const group=d.createBindGroup({layout:this.compute.getBindGroupLayout(0),entries:[...buffers.map((buffer,binding)=>({binding,resource:{buffer}})),{binding:4,resource:this.textureView}]});
     const encoder=d.createCommandEncoder(),compute=encoder.beginComputePass();compute.setPipeline(this.compute);compute.setBindGroup(0,group);compute.dispatchWorkgroups(Math.ceil(width/16),Math.ceil(height/16));compute.end();

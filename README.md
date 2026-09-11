@@ -1,8 +1,8 @@
 # Fast2DGS Viewer
 
-纯原生 HTML / CSS / JavaScript / WGSL 的 Fast2DGS PLY 查看器。无需构建、npm 依赖、CDN、后端或模型上传接口。文件通过浏览器 File API 在本地读取。
+**[在线体验 → https://565353780.github.io/fast-2dgs-viewer/](https://565353780.github.io/fast-2dgs-viewer/)**
 
-在线地址：**https://565353780.github.io/fast-2dgs-viewer/**
+纯原生 HTML / CSS / JavaScript / WGSL 的 Fast2DGS PLY 查看器。无需构建、npm 依赖、CDN、后端或模型上传接口。文件通过浏览器 File API 在本地读取。
 
 打开 `.ply` 或拖入页面。左键拖动旋转，右键 / Shift 拖动平移，滚轮缩放，F 适配。触屏支持单指旋转与双指缩放。可切换背景、分辨率、自动旋转和导出 PNG。1× 对应视口 CSS 像素；2× 提供更高分辨率，不改变面片数量或 SH 阶数。
 

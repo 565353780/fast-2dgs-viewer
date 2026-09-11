@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>Fast2DGS GPU regression</title>
+<h1>WebGPU / world-space reference regression</h1><pre id="result">Running…</pre><canvas id="test"></canvas>
+<script type="module">
+import {Renderer} from '../renderer.js';import {prepare,orbitCamera} from '../core.js';import {fixture,reference} from './fixtures.js';
+try {
+ const renderer=await Renderer.create(document.querySelector('canvas')),scene=fixture(),results=[];
+ for(const [yaw,pitch,mult] of [[0,0,.6],[.65,.3,.6],[-.4,-.2,0],[1.4,.1,.6]]) {
+   const camera=orbitCamera([0,0,0],3,yaw,pitch,80,64);camera.mult=mult;const frame=prepare(scene,camera),bg=[.2,.4,.8];
+   await renderer.render(frame,80,64,bg);const actual=await renderer.readPixels(),expected=reference(scene,camera,frame,bg);let max=0,sum=0;
+   for(let i=0;i<actual.length;i++){const d=Math.abs(actual[i]-expected[i]);max=Math.max(max,d);sum+=d;}
+   results.push({yaw,pitch,mult,maxByteError:max,meanByteError:sum/actual.length,pass:max<=1});
+ }
+ document.querySelector('#result').textContent=JSON.stringify({pass:results.every(r=>r.pass),cases:results},null,2);
+}catch(e){document.querySelector('#result').textContent='FAIL: '+e.stack;}
+</script>

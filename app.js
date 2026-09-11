@@ -22,7 +22,7 @@ worker.onmessage=async({data:m})=>{
   }
   if(m.type==='frame'){
     if(!ready){busy=false;return;}
-    try {const start=performance.now(),c=activeCamera;await renderer.render(m,c.width,c.height,background());
+    try {const start=performance.now(),c=activeCamera;await renderer.render(m,c.width,c.height,background(),c);
       const now=performance.now(),timing=auto&&lastCompleted?`${(1000/(now-lastCompleted)).toFixed(1)} FPS`:`${(now-start+m.ms).toFixed(1)} ms`;lastCompleted=now;
       $('stats').textContent=`${c.width} × ${c.height} · ${timing} · ${m.visible.toLocaleString()} 可见`;
       message('');
@@ -36,12 +36,14 @@ function background(){return $('background').value.match(/[a-f\d]{2}/gi).map(v=>
 function tick(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   if(auto&&ready){yaw+=dt*.24;request();}
-  if(dirty&&!busy&&ready&&renderer){dirty=false;busy=true;const [w,h]=dimensions();activeCamera=orbitCamera(target,distance,yaw,pitch,w,h);worker.postMessage({type:'frame',id:++frameID,camera:activeCamera,maxRefs:renderer.maxRefs});}
+  if(dirty&&!busy&&ready&&renderer){dirty=false;busy=true;const [w,h]=dimensions();activeCamera={...orbitCamera(target,distance,yaw,pitch,w,h),mode:$('mode').value,pointSize:Number($('point-size').value)*Number($('quality').value)};worker.postMessage({type:'frame',id:++frameID,camera:activeCamera,maxRefs:renderer.maxRefs});}
   requestAnimationFrame(tick);
 }
 $('open').onclick=$('open-main').onclick=()=>$('file').click();$('file').onchange=e=>{openFile(e.target.files[0]);e.target.value='';};
 $('reset').onclick=fit;$('rotate').onclick=()=>{auto=!auto;$('rotate').setAttribute('aria-pressed',String(auto));};
 $('background').oninput=$('quality').onchange=request;
+$('mode').onchange=()=>{$('point-controls').hidden=$('mode').value!=='points';request();};
+$('point-size').oninput=()=>{$('point-value').textContent=$('point-size').value;request();};
 $('save').onclick=async()=>{
   try {const w=canvas.width,h=canvas.height,pixels=await renderer.readPixels(),copy=document.createElement('canvas');copy.width=w;copy.height=h;copy.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(pixels),w,h),0,0);
     copy.toBlob(blob=>{if(!blob)return;const a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=filename.replace(/\.ply$/i,'')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});

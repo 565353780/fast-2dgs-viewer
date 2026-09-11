@@ -83,18 +83,24 @@ export function prepare(scene,camera,maxRefs=16000000) {
   for(let i=0;i<scene.count;i++) {
     const p=Array.from(scene.position.subarray(i*3,i*3+3)),delta=p.map((v,k)=>v-eye[k]);
     const z=dot(delta,forward); if(z<=0.2) continue;
-    const a=scene.tangent.subarray(i*6,i*6+3),b=scene.tangent.subarray(i*6+3,i*6+6);
-    if(dot(delta,cross(a,b))===0) continue;
-    const vx=[dot(a,right),dot(b,right),dot(delta,right)],vy=[dot(a,down),dot(b,down),dot(delta,down)],w=[dot(a,forward),dot(b,forward),z];
-    const u=vx.map((v,k)=>fx*v+cx*w[k]),v=vy.map((v,k)=>fy*v+cy*w[k]);
-    const cutoff=compactCutoff(scene.opacity[i],camera.mult),c2=cutoff*cutoff,den=c2*(w[0]*w[0]+w[1]*w[1])-w[2]*w[2];
-    if(den===0) continue;
-    const f=[c2/den,c2/den,-1/den],sum=(a,b)=>f[0]*a[0]*b[0]+f[1]*a[1]*b[1]+f[2]*a[2]*b[2];
-    const px=sum(u,w),py=sum(v,w),ex=Math.sqrt(Math.max(1e-4,px*px-sum(u,u))),ey=Math.sqrt(Math.max(1e-4,py*py-sum(v,v)));
-    const radius=Math.ceil(Math.max(ex,ey,cutoff*0.707106));
+    let u=[0,0,0],v=[0,0,0],w=[0,0,z],px,py,radius;
+    if(camera.mode==='points') {
+      px=fx*dot(delta,right)/z+cx;py=fy*dot(delta,down)/z+cy;
+      radius=Math.ceil((camera.pointSize??3)/2);
+    } else {
+      const a=scene.tangent.subarray(i*6,i*6+3),b=scene.tangent.subarray(i*6+3,i*6+6);
+      if(dot(delta,cross(a,b))===0) continue;
+      const vx=[dot(a,right),dot(b,right),dot(delta,right)],vy=[dot(a,down),dot(b,down),dot(delta,down)];w=[dot(a,forward),dot(b,forward),z];
+      u=vx.map((v,k)=>fx*v+cx*w[k]);v=vy.map((v,k)=>fy*v+cy*w[k]);
+      const cutoff=compactCutoff(scene.opacity[i],camera.mult),c2=cutoff*cutoff,den=c2*(w[0]*w[0]+w[1]*w[1])-w[2]*w[2];
+      if(den===0) continue;
+      const f=[c2/den,c2/den,-1/den],sum=(a,b)=>f[0]*a[0]*b[0]+f[1]*a[1]*b[1]+f[2]*a[2]*b[2];
+      px=sum(u,w);py=sum(v,w);const ex=Math.sqrt(Math.max(1e-4,px*px-sum(u,u))),ey=Math.sqrt(Math.max(1e-4,py*py-sum(v,v)));
+      radius=Math.ceil(Math.max(ex,ey,cutoff*0.707106));
+    }
     // CUDA getRect truncates toward zero and uses BLOCK_X - 1 (not ceil).
     const x0=Math.min(nx,Math.max(0,Math.trunc((px-radius)/16))),y0=Math.min(ny,Math.max(0,Math.trunc((py-radius)/16)));
-    const x1=Math.min(nx,Math.max(0,Math.trunc((px+radius+15)/16))),y1=Math.min(ny,Math.max(0,Math.trunc((py+radius+15)/16)));
+    const x1=Math.min(nx,Math.max(0,camera.mode==='points'?Math.floor((px+radius)/16)+1:Math.trunc((px+radius+15)/16))),y1=Math.min(ny,Math.max(0,camera.mode==='points'?Math.floor((py+radius)/16)+1:Math.trunc((py+radius+15)/16)));
     if(x1<=x0 || y1<=y0 || !Number.isFinite(radius)) continue;
     total+=(x1-x0)*(y1-y0); if(total>maxRefs) throw Error('当前视角超出 GPU 分块容量；请缩小视图或使用较小的模型。');
     rects.set([x0,y0,x1,y1],i*4);depth[i]=z;visible.push(i);

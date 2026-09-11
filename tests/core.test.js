@@ -26,3 +26,8 @@ test('reference includes HDR color before final clamp and non-background pixels'
   const s=fixture(),c=orbitCamera([0,0,0],3,0,0,64,64),f=prepare(s,c),r=reference(s,c,f);
   assert.ok(f.data[12]>1);assert.ok(r.some((x,i)=>i%4!==3&&x<150));assert.equal(r.length,64*64*4);
 });
+test('point mode keeps transparent and edge-on Gaussian centers, across tile boundaries',()=>{
+  const s=parsePLY(plyBuffer([{opacity:-100,rot_0:Math.SQRT1_2,rot_2:Math.SQRT1_2},{z:1}],0));
+  const camera={...orbitCamera([0,0,0],3,0,0,64,64),mode:'points',pointSize:3,cx:31.9,cy:31.9};
+  const f=prepare(s,camera);assert.equal(f.visible,2);assert.ok(f.offsets[11]>f.offsets[10]);assert.ok(Math.abs(f.data[3]-31.9)<1e-5);
+});

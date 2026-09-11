@@ -40,3 +40,18 @@ export function reference(scene,camera,frame,bg=[1,1,1]) {
   }
   return out;
 }
+// Brute-force point oracle, independent of tile binning and prepared screen centers.
+export function referencePoints(scene,camera,bg) {
+  const points=[];
+  for(let i=0;i<scene.count;i++) {const d=Array.from(scene.position.subarray(i*3,i*3+3),(v,k)=>v-camera.eye[k]),z=dot(d,camera.forward);if(z<=.2)continue;
+    points.push({i,z,x:camera.fx*dot(d,camera.right)/z+camera.cx,y:camera.fy*dot(d,camera.down)/z+camera.cy});}
+  points.sort((a,b)=>a.z-b.z||a.i-b.i);
+  const out=new Uint8Array(camera.width*camera.height*4);
+  for(let y=0;y<camera.height;y++)for(let x=0;x<camera.width;x++){
+    const p=points.find(p=>(p.x-x)**2+(p.y-y)**2<=(camera.pointSize/2)**2);
+    // SH0 fixtures isolate coverage, size and opaque depth ordering.
+    const color=p?Array.from({length:3},(_,ch)=>Math.max(0,.5+.28209479177387814*scene.sh[p.i*3+ch])):bg;
+    const k=(y*camera.width+x)*4;out.set([...color.map(c=>Math.round(Math.min(1,c)*255)),255],k);
+  }
+  return out;
+}
